@@ -1,3 +1,9 @@
+# Changes
+
+This package is a fork of Speakeasy with one major modification; it lifts a version requirement on the unicorn dependency. No
+other modifications have been made, other than adjusting the metadata to reflect that this is a fork with the aforementioned
+purpose.
+
 # Speakeasy
 
 Speakeasy is a portable, modular, binary emulator designed to emulate Windows kernel and user mode malware.

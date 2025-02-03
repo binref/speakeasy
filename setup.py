@@ -16,14 +16,14 @@ with open("requirements.txt", encoding="utf-8") as f:
     requirements = [line.strip() for line in f.readlines()]
 
 setuptools.setup(
-    name="speakeasy-emulator",
+    name="speakeasy-emulator-refined",
     author="Andrew Davis",
     description="Speakeasy malware emulation framework",
     version=version,
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
-    url="https://github.com/fireeye/speakeasy",
+    url="https://github.com/binref/speakeasy",
     include_package_data=True,
     install_requires=requirements,
     classifiers=[
