@@ -16,7 +16,7 @@ with open("requirements.txt", encoding="utf-8") as f:
     requirements = [line.strip() for line in f.readlines()]
 
 setuptools.setup(
-    name="speakeasy-emulator-refined",
+    name="speakeasy_emulator_refined",
     author="Andrew Davis",
     description="Speakeasy malware emulation framework",
     version=version,
