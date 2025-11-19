@@ -6,19 +6,24 @@ import platform
 import ctypes as ct
 
 import unicorn as uc
-import unicorn.unicorn
 import unicorn.x86_const as u
 
 import speakeasy.winenv.arch as arch
 import speakeasy.common as common
+
 from speakeasy.errors import EmuEngineError
 
-_uc = unicorn.unicorn._uc
+try:
+    from unicorn import unicorn as _uuc
+    _uc = _uuc._uc
+except AttributeError:
+    from unicorn.unicorn_py3 import unicorn as _uuc
+    _uc = _uuc.uclib
+
 _uc.uc_hook_add = _uc.uc_hook_add
 _uc.uc_hook_add.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_void_p, ct.c_void_p,
                             ct.c_void_p, ct.c_uint64, ct.c_uint64]
 _uc.uc_hook_add.restype = ct.c_uint32
-hook_id = ct.c_void_p()
 
 
 def is_platform_intel():
@@ -51,7 +56,6 @@ class EmuEngine(object):
 
     def __init__(self):
         self.name = 'unicorn'
-        self.emu = None
         self.mmap = None
         self._callbacks = {}
 
@@ -210,46 +214,18 @@ class EmuEngine(object):
         if not hook_type:
             raise EmuEngineError('Invalid hook type')
 
-        handle = self.emu._uch
-
-        # The unicorn bindings have a default python wrapper. We want to use
-        # our own wrapper and don't need the extra overhead. Add callbacks directly
-        # to the unicorn library here.
-        if hook_type == uc.UC_HOOK_INSN:
-            if arg1 == u.UC_X86_INS_IN:  # IN instruction
-                cb = ct.cast(unicorn.unicorn.UC_HOOK_INSN_IN_CB(cb),
-                             unicorn.unicorn.UC_HOOK_INSN_IN_CB)
-            elif arg1 in (u.UC_X86_INS_SYSCALL, u.UC_X86_INS_SYSENTER):  # SYSCALL/SYSENTER
-                cb = ct.cast(unicorn.unicorn.UC_HOOK_INSN_SYSCALL_CB(cb),
-                             unicorn.unicorn.UC_HOOK_INSN_SYSCALL_CB)
-        elif hook_type == uc.UC_HOOK_CODE:
-            cb = ct.cast(unicorn.unicorn.UC_HOOK_CODE_CB(cb),
-                         unicorn.unicorn.UC_HOOK_CODE_CB)
-        elif hook_type in (uc.UC_HOOK_MEM_READ, uc.UC_HOOK_MEM_WRITE):
-            cb = ct.cast(unicorn.unicorn.UC_HOOK_MEM_ACCESS_CB(cb),
-                         unicorn.unicorn.UC_HOOK_MEM_ACCESS_CB)
-        elif hook_type == uc.UC_HOOK_MEM_INVALID:
-            cb = ct.cast(unicorn.unicorn.UC_HOOK_MEM_INVALID_CB(cb),
-                         unicorn.unicorn.UC_HOOK_MEM_INVALID_CB)
-        else:
-            return self.emu.hook_add(htype=hook_type, callback=cb, user_data=ctx,
-                                     begin=begin, end=end)
-        ptr = ct.cast(cb, ct.c_void_p)
-        # uc_hook_add requires an additional paramter for the hook type UC_HOOK_INSN
-        if hook_type == uc.UC_HOOK_INSN:
-            insn = ct.c_int(arg1)
-            rv = _uc.uc_hook_add(handle, ct.byref(hook_id), hook_type, ptr.value,
-                                 None, begin, end, insn)
-        else:
-            rv = _uc.uc_hook_add(handle, ct.byref(hook_id), hook_type, ptr.value,
-                                 None, begin, end)
-        if rv != uc.UC_ERR_OK:
-            raise uc.UcError(rv)
-
+        hook = self.emu.hook_add(htype=hook_type, callback=cb, user_data=ctx, begin=begin, end=end)
+        if hook_type not in (
+            uc.UC_HOOK_INSN,
+            uc.UC_HOOK_CODE,
+            uc.UC_HOOK_MEM_READ,
+            uc.UC_HOOK_MEM_WRITE,
+            uc.UC_HOOK_MEM_INVALID,
+        ):
+            return hook
         th = ToggleableHook(cb)
-        self._callbacks.update({hook_id.value: th})
-
-        return hook_id.value
+        self._callbacks.update({hook: th})
+        return hook
 
     def hook_enable(self, hook_handle):
         """
