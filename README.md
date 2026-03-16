@@ -1,3 +1,10 @@
+# Changes
+
+This package is a fork of [Speakeasy](https://github.com/mandiant/speakeasy) published as
+[`speakeasy-emulator-refined`](https://pypi.org/project/speakeasy-emulator-refined/) on PyPI.
+No modifications have been made to the code; the only difference is that this fork publishes
+releases to PyPI while the upstream package does not.
+
 # Speakeasy
 
 Speakeasy is a Windows malware emulation framework that executes binaries, drivers, and shellcode in a modeled Windows runtime instead of a full VM. It emulates APIs, process/thread behavior, filesystem, registry, and network activity so samples can keep moving through realistic execution paths. You can run it from the `speakeasy` CLI for fast triage or embed it as a Python library and consume structured JSON reports.
